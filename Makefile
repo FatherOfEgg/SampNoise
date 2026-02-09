@@ -10,6 +10,9 @@ LIB_INC = $(LIB_ROOT)/include
 
 CXX := g++
 CXXFLAGS := -std=c++17 -Wall -Wextra -Werror \
+			-Wno-error=unused-function \
+			-Wno-error=unused-parameter \
+			-Wno-error=unused-but-set-variable \
 			-O2 \
 			-g -MMD -MP
 LDFLAGS := $(LIB)
