@@ -1,0 +1,3 @@
+[submodule "PhyloParse"]
+	path = PhyloParse
+	url = https://github.com/FatherOfEgg/PhyloParse
