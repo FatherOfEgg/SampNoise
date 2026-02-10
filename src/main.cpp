@@ -3,15 +3,19 @@
 #include <filesystem>
 #include <iostream>
 #include <random>
+#include <sstream>
+#include <stack>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <PhyloParse/phyloParse.h>
 #include <PhyloParse/status.h>
+#include <PhyloParse/util.h>
 
 static std::mt19937 gen;
 
-static void setupChoices(
+static inline void setupChoices(
     std::unordered_map<uint64_t, uint64_t> &choices,
     const std::vector<std::vector<PhyloParse::Edge>> &revAdjList,
     const std::vector<uint64_t> &reticulations
@@ -22,6 +26,56 @@ static void setupChoices(
 
         choices[r] = parents[distr(gen)].to;
     }
+}
+
+bool isDescendant(
+    const std::vector<std::vector<PhyloParse::Edge>> &adjList,
+    uint64_t parent,
+    uint64_t child
+) {
+    if (parent == child) {
+        return true;
+    }
+
+    std::stack<uint64_t> s;
+
+    for (PhyloParse::Edge child : adjList[parent]) {
+        s.push(child.to);
+    }
+
+    while (!s.empty()) {
+        uint64_t current = s.top();
+        s.pop();
+
+        if (current == child) {
+            return true;
+        }
+
+        for (PhyloParse::Edge child : adjList[current]) {
+            s.push(child.to);
+        }
+    }
+
+    return false;
+}
+
+static std::pair<uint64_t, uint64_t> pickEdge(
+    const std::vector<std::vector<PhyloParse::Edge>> &adjList,
+    uint64_t *rootPtr
+) {
+    std::uniform_int_distribution<> distr(0, adjList.size() - 1);
+
+    do {
+        uint64_t start;
+
+        do {
+            start = distr(gen);
+        } while (rootPtr != nullptr && *rootPtr == start);
+
+        std::uniform_int_distribution<> distrChild(0, adjList[start].size() - 1);
+
+        return std::make_pair(start, distrChild(gen));
+    } while (true);
 }
 
 static void usage(const std::string &prgName) {
@@ -117,16 +171,16 @@ int main(int argc, char **argv) {
         gen.seed(rd());
     }
 
-    std::string fileBase;
+    std::ostringstream outPath;
 
     {
         std::filesystem::path fullPath = file;
 
-        fileBase = fullPath.stem();
-
         if (outDir.empty())  {
             outDir = fullPath.parent_path() / "out";
         }
+
+        outPath << outDir << "/" << fullPath.stem();
     }
 
     std::filesystem::create_directories(outDir);
@@ -141,6 +195,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    uint64_t root = g.getRoot();
     const std::vector<std::vector<PhyloParse::Edge>> &revAdjList = g.getRevAdjList();
     const std::vector<uint64_t> &reticulations = g.getReticulations();
 
@@ -151,9 +206,33 @@ int main(int argc, char **argv) {
         setupChoices(choices, revAdjList, reticulations);
         auto subtree = g.getSubtree(choices);
 
+        std::vector<std::vector<PhyloParse::Edge>> adjList = subtree.first;
+        std::vector<std::vector<PhyloParse::Edge>> revAdjList = subtree.second;
+
         for (unsigned int n = 0; n < noisiness; n++) {
+            std::pair<uint64_t, uint64_t> edge1 = pickEdge(adjList, &root);
+            std::pair<uint64_t, uint64_t> edge2;
 
+            do {
+                edge2 = pickEdge(adjList, nullptr);
+            } while (isDescendant(adjList, edge1.first, edge2.first));
+
+            PhyloParse::Util::spr(
+                adjList,
+                revAdjList,
+                edge1.first,
+                edge1.second,
+                edge2.first,
+                edge2.second
+            );
         }
-    }
 
+        std::ostringstream oss;
+        oss << outPath.str();
+        oss << std::setfill('0') << std::setw(2) << s + 1;
+        oss << ".enwk";
+
+        PhyloParse::Graph temp(adjList, revAdjList, g.getLeaves(), {});
+        temp.save(f, oss.str());
+    }
 }
