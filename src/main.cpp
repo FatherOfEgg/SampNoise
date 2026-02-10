@@ -87,9 +87,9 @@ static void usage(const std::string &prgName) {
     std::cout << "FLAGS:" << std::endl;
     std::cout << "\t-h\tPrints help information." << std::endl;
     std::cout << "\t-s\tNumber of samples (contained subtree) to get." << std::endl;
-    std::cout << "\t\tDefaults to 0." << std::endl;
+    std::cout << "\t\tDefaults to 1." << std::endl;
     std::cout << "\t-n\tHow much noise (SPR) to add to each sample." << std::endl;
-    std::cout << "\t\tDefaults to 0." << std::endl;
+    std::cout << "\t\tDefaults to 1." << std::endl;
     std::cout << "\t-o\tOutput directory." << std::endl;
     std::cout << "\t\tDefaults to 'out' in the same directory." << std::endl;
     std::cout << "\t-sd\tOptionally set seed." << std::endl;
@@ -104,8 +104,8 @@ int main(int argc, char **argv) {
 
     std::string file;
     std::string outDir;
-    unsigned int samples = 0;
-    unsigned int noisiness = 0;
+    unsigned int samples = 1;
+    unsigned int noisiness = 1;
     bool isSetSeed = false;
 
     for (int i = 1; i < argc; i++) {
