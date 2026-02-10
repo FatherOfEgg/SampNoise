@@ -70,7 +70,10 @@ static std::pair<uint64_t, uint64_t> pickEdge(
 
         do {
             start = distr(gen);
-        } while (rootPtr != nullptr && *rootPtr == start);
+        } while (
+            (rootPtr != nullptr && *rootPtr == start) ||
+            adjList[start].empty()
+        );
 
         std::uniform_int_distribution<> distrChild(0, adjList[start].size() - 1);
         uint64_t end = adjList[start][distrChild(gen)].to;
