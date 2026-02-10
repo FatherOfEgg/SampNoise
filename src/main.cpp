@@ -183,8 +183,6 @@ int main(int argc, char **argv) {
         outPath << outDir << "/" << fullPath.stem();
     }
 
-    std::filesystem::create_directories(outDir);
-
     PhyloParse::Graph g;
     PhyloParse::ExtendedNewickFormat f;
 
@@ -194,6 +192,8 @@ int main(int argc, char **argv) {
         std::cout << "Failed to open graph: " << s.getErrorMsg() << std::endl;
         return EXIT_FAILURE;
     }
+
+    std::filesystem::create_directories(outDir);
 
     uint64_t root = g.getRoot();
     const std::vector<std::vector<PhyloParse::Edge>> &revAdjList = g.getRevAdjList();
