@@ -174,13 +174,13 @@ int main(int argc, char **argv) {
     std::ostringstream outPath;
 
     {
-        std::filesystem::path fullPath = file;
+        std::filesystem::path fullPath(file);
 
         if (outDir.empty())  {
             outDir = fullPath.parent_path() / "out";
         }
 
-        outPath << outDir << "/" << fullPath.stem();
+        outPath << outDir << "/" << fullPath.stem().string();
     }
 
     PhyloParse::Graph g;
