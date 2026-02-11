@@ -30,12 +30,12 @@ TARGET := $(BIN_DIR)/$(TARGET_NAME)
 
 .PHONY: all clean test directories check-and-reinit-submodules
 
-all: directories check-and-reinit-submodules $(TARGET)
+all: directories $(TARGET)
 
 $(TARGET): $(OBJS) $(LIB)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
-$(OBJS_DIR)/%.o: $(SRC_DIR)/%.cpp
+$(OBJS_DIR)/%.o: $(SRC_DIR)/%.cpp $(LIB)
 	@mkdir -p $(dir $@)
 	@echo "Compiling: $<"
 	@$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
@@ -44,9 +44,11 @@ directories:
 	@mkdir -p $(OBJS_DIR)
 	@mkdir -p $(BIN_DIR)
 
-$(LIB):
-	@echo "PhyloParse library not found or outdated. Building library..."
-	$(MAKE) -C $(LIB_ROOT)
+$(LIB): check-and-reinit-submodules
+	@if [ ! -f "$(LIB)" ]; then \
+		echo "PhyloParse library not found or outdated. Building library..."; \
+		$(MAKE) -C $(LIB_ROOT); \
+	fi
 
 # https://stackoverflow.com/a/52407662
 check-and-reinit-submodules:
