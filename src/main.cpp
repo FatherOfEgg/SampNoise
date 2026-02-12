@@ -101,7 +101,7 @@ static void usage(const std::string &prgName) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 2) {
+    if (argc < 2) {
         usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -190,7 +190,7 @@ int main(int argc, char **argv) {
     PhyloParse::Graph g;
     PhyloParse::ExtendedNewickFormat f;
 
-    PhyloParse::Status s = g.open(f, argv[1]);
+    PhyloParse::Status s = g.open(f, file);
 
     if (!s.isOk()) {
         std::cout << "Failed to open graph: " << s.getErrorMsg() << std::endl;
