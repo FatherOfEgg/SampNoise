@@ -15,6 +15,28 @@
 
 static std::mt19937 gen;
 
+static inline std::vector<uint64_t> getSelectableNodes(const PhyloParse::Graph &g) {
+    uint64_t root = g.getRoot();
+    const std::vector<std::vector<PhyloParse::Edge>> &adjList = g.getAdjList();
+    const std::unordered_map<uint64_t, std::string> &leaves = g.getLeaves();
+
+    std::vector<uint64_t> res;
+    res.reserve(adjList.size() - leaves.size());
+
+    for (size_t i = 0; i < adjList.size(); i++) {
+        if (i == root
+        ||  leaves.count(i) > 0) {
+            continue;
+        }
+
+        res.push_back(i);
+    }
+
+    res.push_back(root);
+
+    return res;
+}
+
 static inline void setupChoices(
     std::unordered_map<uint64_t, uint64_t> &choices,
     const std::vector<std::vector<PhyloParse::Edge>> &revAdjList,
@@ -22,7 +44,7 @@ static inline void setupChoices(
 ) {
     for (uint64_t r : reticulations) {
         std::vector<PhyloParse::Edge> parents = revAdjList[r];
-        std::uniform_int_distribution<> distr(0, parents.size() - 1);
+        std::uniform_int_distribution<uint64_t> distr(0, parents.size() - 1);
 
         choices[r] = parents[distr(gen)].to;
     }
@@ -60,26 +82,28 @@ bool isDescendant(
 }
 
 static std::pair<uint64_t, uint64_t> pickEdge(
+    const std::vector<uint64_t> &selectableNodes,
     const std::vector<std::vector<PhyloParse::Edge>> &adjList,
-    uint64_t *rootPtr
+    bool ignoreRoot
 ) {
-    std::uniform_int_distribution<> distr(0, adjList.size() - 1);
+    std::uniform_int_distribution<uint64_t> distr;
 
-    do {
-        uint64_t start;
+    {
+        uint64_t b = selectableNodes.size();
 
-        do {
-            start = distr(gen);
-        } while (
-            (rootPtr != nullptr && *rootPtr == start) ||
-            adjList[start].empty()
-        );
+        if (ignoreRoot) {
+            b--;
+        }
 
-        std::uniform_int_distribution<> distrChild(0, adjList[start].size() - 1);
-        uint64_t end = adjList[start][distrChild(gen)].to;
+        distr.param(std::uniform_int_distribution<uint64_t>::param_type(0, b - 1));
+    }
 
-        return std::make_pair(start, end);
-    } while (true);
+    uint64_t start = selectableNodes[distr(gen)];
+
+    std::uniform_int_distribution<uint64_t> distrChild(0, adjList[start].size() - 1);
+    uint64_t end = adjList[start][distrChild(gen)].to;
+
+    return std::make_pair(start, end);
 }
 
 static void usage(const std::string &prgName) {
@@ -199,12 +223,13 @@ int main(int argc, char **argv) {
 
     std::filesystem::create_directories(outDir);
 
-    uint64_t root = g.getRoot();
     const std::vector<std::vector<PhyloParse::Edge>> &revAdjList = g.getRevAdjList();
     const std::vector<uint64_t> &reticulations = g.getReticulations();
 
     std::unordered_map<uint64_t, uint64_t> choices;
     choices.reserve(reticulations.size());
+
+    std::vector<uint64_t> selectableNodes = getSelectableNodes(g);
 
     for (unsigned int s = 0; s < samples; s++) {
         setupChoices(choices, revAdjList, reticulations);
@@ -214,11 +239,11 @@ int main(int argc, char **argv) {
         std::vector<std::vector<PhyloParse::Edge>> revAdjList = subtree.second;
 
         for (unsigned int n = 0; n < noisiness; n++) {
-            std::pair<uint64_t, uint64_t> edge1 = pickEdge(adjList, &root);
+            std::pair<uint64_t, uint64_t> edge1 = pickEdge(selectableNodes, adjList, true);
             std::pair<uint64_t, uint64_t> edge2;
 
             do {
-                edge2 = pickEdge(adjList, nullptr);
+                edge2 = pickEdge(selectableNodes, adjList, false);
             } while (isDescendant(adjList, edge1.first, edge2.first));
 
             PhyloParse::Util::spr(
