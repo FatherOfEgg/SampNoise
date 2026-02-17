@@ -13,6 +13,7 @@ CXXFLAGS := -std=c++17 -Wall -Wextra -Werror \
 			-Wno-error=unused-function \
 			-Wno-error=unused-parameter \
 			-Wno-error=unused-but-set-variable \
+			-Wno-error=unused-variable \
 			-O2 \
 			-g -MMD -MP
 LDFLAGS := $(LIB)
@@ -54,7 +55,9 @@ $(LIB): check-and-reinit-submodules
 check-and-reinit-submodules:
 	@if git submodule status | egrep -q '^[-+]' ; then \
 		echo "Need to reinitialize git submodules..."; \
-		git submodule update --init; \
+		git submodule update --init --remote; \
+		git add PhyloParse; \
+		git commit -m "Update PhyloParse submodule"; \
 	fi
 
 clean:
