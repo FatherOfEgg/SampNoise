@@ -21,11 +21,13 @@ static inline std::vector<uint64_t> getSelectableNodes(const PhyloParse::Graph &
     const std::unordered_map<uint64_t, std::string> &leaves = g.getLeaves();
 
     std::vector<uint64_t> res;
-    res.reserve(adjList.size() - leaves.size());
+    res.reserve(adjList.size() - leaves.size() - g.getReticulations().size());
 
     for (size_t i = 0; i < adjList.size(); i++) {
         if (i == root
-        ||  leaves.count(i) > 0) {
+        ||  leaves.count(i) > 0
+        ||  g.getReticulations().find(i) != g.getReticulations().end()
+        ) {
             continue;
         }
 
