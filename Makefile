@@ -56,8 +56,6 @@ check-and-reinit-submodules:
 	@if git submodule status | egrep -q '^[-+]' ; then \
 		echo "Need to reinitialize git submodules..."; \
 		git submodule update --init --remote; \
-		git add PhyloParse; \
-		git commit -m "Update PhyloParse submodule"; \
 	fi
 
 clean:
