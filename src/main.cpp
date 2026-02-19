@@ -14,6 +14,8 @@
 #include <PhyloParse/status.h>
 #include <PhyloParse/util.h>
 
+#define EDGE2_MAX_ATTEMPTS  10
+
 static std::mt19937 gen;
 
 static inline std::vector<uint64_t> getSelectableNodes(const PhyloParse::Graph &g) {
@@ -254,12 +256,26 @@ int main(int argc, char **argv) {
         std::vector<std::vector<PhyloParse::Edge>> revAdjList = subtree.second;
 
         for (unsigned int n = 0; n < noisiness; n++) {
-            std::pair<uint64_t, uint64_t> edge1 = pickEdge(selectableNodes, adjList, revAdjList, true);
+            std::pair<uint64_t, uint64_t> edge1;
             std::pair<uint64_t, uint64_t> edge2;
 
-            do {
-                edge2 = pickEdge(selectableNodes, adjList, revAdjList, false);
-            } while (isDescendant(adjList, edge1.first, edge2.first));
+            while (true) {
+                edge1 = pickEdge(selectableNodes, adjList, revAdjList, true);
+                bool found = false;
+
+                for (uint64_t attempts = 0; attempts < EDGE2_MAX_ATTEMPTS; attempts++) {
+                    edge2 = pickEdge(selectableNodes, adjList, revAdjList, false);
+
+                    if (!isDescendant(adjList, edge1.first, edge2.first)) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found) {
+                    break;
+                }
+            }
 
             PhyloParse::Util::spr(
                 adjList,
@@ -276,7 +292,7 @@ int main(int argc, char **argv) {
         oss << std::setfill('0') << std::setw(2) << s + 1;
         oss << ".enwk";
 
-        PhyloParse::Graph temp(adjList, revAdjList, g.getLeaves(), {});
+        PhyloParse::Graph temp(adjList, revAdjList, g.getLeaves(), {}, g.getRoot());
         temp.save(f, oss.str());
     }
 }
