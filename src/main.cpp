@@ -62,6 +62,13 @@ bool isDescendant(
         return true;
     }
 
+    // If parent is a direct descendant of child
+    for (PhyloParse::Edge child : adjList[child]) {
+        if (child.to == parent) {
+            return true;
+        }
+    }
+
     std::stack<uint64_t> s;
 
     for (PhyloParse::Edge child : adjList[parent]) {
